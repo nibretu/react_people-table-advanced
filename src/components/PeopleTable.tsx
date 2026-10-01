@@ -27,7 +27,7 @@ export const PeopleTable = ({ people, sort, order }: Props) => {
     return foundPerson ? getSlug(foundPerson) : null;
   };
 
-  // 1. Handle header clicks to cycle sorting states
+  // 1. Click handler to cycle sorting states: asc -> desc -> disabled
   const handleSort = (field: string) => {
     const newParams = new URLSearchParams(searchParams);
 
@@ -37,7 +37,7 @@ export const PeopleTable = ({ people, sort, order }: Props) => {
         newParams.set('sort', field);
         newParams.set('order', 'desc');
       } else {
-        // Cycle to disabled (remove params)
+        // Cycle to disabled (remove both params)
         newParams.delete('sort');
         newParams.delete('order');
       }
@@ -50,7 +50,7 @@ export const PeopleTable = ({ people, sort, order }: Props) => {
     setSearchParams(newParams);
   };
 
-  // 2. Helper to render the visual indicator arrows
+  // 2. Visual indicators for the active column
   const renderSortArrow = (field: string) => {
     if (sort !== field) {
       return null;
@@ -66,7 +66,7 @@ export const PeopleTable = ({ people, sort, order }: Props) => {
     >
       <thead>
         <tr>
-          {/* 3. Make headers clickable and add visual indicators */}
+          {/* 3. Added onClick handlers and visual indicators */}
           <th onClick={() => handleSort('name')} style={{ cursor: 'pointer' }}>
             Name{renderSortArrow('name')}
           </th>

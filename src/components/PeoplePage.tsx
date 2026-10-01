@@ -68,7 +68,7 @@ export const PeoplePage = () => {
       return true;
     });
 
-    // 2. Apply sorting logic
+    // 2. Apply sorting logic based on URL params
     if (sort) {
       return [...currentPeople].sort((a, b) => {
         let comparison = 0;
@@ -83,6 +83,7 @@ export const PeoplePage = () => {
           comparison = a.died - b.died;
         }
 
+        // If order is 'desc', reverse the comparison
         return order === 'desc' ? -comparison : comparison;
       });
     }
@@ -119,12 +120,11 @@ export const PeoplePage = () => {
               !hasError &&
               people.length > 0 &&
               filteredPeople.length === 0 ? (
-                // eslint-disable-next-line max-len, @typescript-eslint/indent
                 <p>There are no people matching the current search criteria</p>
               ) : null}
 
               {!isLoading && !hasError && filteredPeople.length > 0 && (
-                // 3. Pass sort and order props to the table
+                // 3. Pass sort and order props to the table for headers
                 <PeopleTable
                   people={filteredPeople}
                   sort={sort}
