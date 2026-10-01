@@ -1,29 +1,106 @@
+/* eslint-disable @typescript-eslint/indent */
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+
+import { getPeople } from '../api';
+import { Person } from '../types/Person';
 import { PeopleFilters } from './PeopleFilters';
 import { Loader } from './Loader';
 import { PeopleTable } from './PeopleTable';
 
 export const PeoplePage = () => {
+  const [people, setPeople] = useState<Person[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    setIsLoading(true);
+    setHasError(false);
+
+    getPeople()
+      .then(setPeople)
+      .catch(() => setHasError(true))
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const sex = searchParams.get('sex');
+  const query = searchParams.get('query')?.toLowerCase() || '';
+  const centuries = searchParams.getAll('centuries');
+
+  const filteredPeople = useMemo(() => {
+    return people.filter(person => {
+      // Sex filter
+      if (sex && person.sex !== sex) {
+        return false;
+      }
+
+      // Name filter
+      if (query) {
+        const personName = person.name.toLowerCase();
+        const motherName = person.motherName?.toLowerCase() || '';
+        const fatherName = person.fatherName?.toLowerCase() || '';
+
+        const matches =
+          personName.includes(query) ||
+          motherName.includes(query) ||
+          fatherName.includes(query);
+
+        if (!matches) {
+          return false;
+        }
+      }
+
+      // Century filter
+      if (centuries.length > 0) {
+        const century = Math.floor(person.born / 100) + 1;
+
+        if (!centuries.includes(String(century))) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [people, sex, query, centuries]);
+
   return (
     <>
       <h1 className="title">People Page</h1>
 
       <div className="block">
         <div className="columns is-desktop is-flex-direction-row-reverse">
-          <div className="column is-7-tablet is-narrow-desktop">
-            <PeopleFilters />
-          </div>
+          {!isLoading && !hasError && people.length > 0 && (
+            <div className="column is-7-tablet is-narrow-desktop">
+              <PeopleFilters />
+            </div>
+          )}
 
           <div className="column">
             <div className="box table-container">
-              <Loader />
+              {isLoading && <Loader />}
 
-              <p data-cy="peopleLoadingError">Something went wrong</p>
+              {hasError && (
+                <p data-cy="peopleLoadingError">Something went wrong</p>
+              )}
 
-              <p data-cy="noPeopleMessage">There are no people on the server</p>
+              {!isLoading && !hasError && people.length === 0 && (
+                <p data-cy="noPeopleMessage">
+                  There are no people on the server
+                </p>
+              )}
+              {!isLoading &&
+              !hasError &&
+              people.length > 0 &&
+              filteredPeople.length === 0 ? (
+                // eslint-disable-next-line max-len, @typescript-eslint/indent
+                <p>There are no people matching the current search criteria</p>
+              ) : null}
 
-              <p>There are no people matching the current search criteria</p>
-
-              <PeopleTable />
+              {!isLoading && !hasError && filteredPeople.length > 0 && (
+                <PeopleTable people={filteredPeople} />
+              )}
             </div>
           </div>
         </div>
