@@ -29,8 +29,12 @@ export const PeoplePage = () => {
   const query = searchParams.get('query')?.toLowerCase() || '';
   const centuries = searchParams.getAll('centuries');
 
+  // 1. Read sorting params from URL
+  const sort = searchParams.get('sort');
+  const order = searchParams.get('order');
+
   const filteredPeople = useMemo(() => {
-    return people.filter(person => {
+    const currentPeople = people.filter(person => {
       // Sex filter
       if (sex && person.sex !== sex) {
         return false;
@@ -63,7 +67,28 @@ export const PeoplePage = () => {
 
       return true;
     });
-  }, [people, sex, query, centuries]);
+
+    // 2. Apply sorting logic
+    if (sort) {
+      return [...currentPeople].sort((a, b) => {
+        let comparison = 0;
+
+        if (sort === 'name') {
+          comparison = a.name.localeCompare(b.name);
+        } else if (sort === 'sex') {
+          comparison = a.sex.localeCompare(b.sex);
+        } else if (sort === 'born') {
+          comparison = a.born - b.born;
+        } else if (sort === 'died') {
+          comparison = a.died - b.died;
+        }
+
+        return order === 'desc' ? -comparison : comparison;
+      });
+    }
+
+    return currentPeople;
+  }, [people, sex, query, centuries, sort, order]);
 
   return (
     <>
@@ -99,7 +124,12 @@ export const PeoplePage = () => {
               ) : null}
 
               {!isLoading && !hasError && filteredPeople.length > 0 && (
-                <PeopleTable people={filteredPeople} />
+                // 3. Pass sort and order props to the table
+                <PeopleTable
+                  people={filteredPeople}
+                  sort={sort}
+                  order={order}
+                />
               )}
             </div>
           </div>

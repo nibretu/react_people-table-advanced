@@ -1,23 +1,22 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { Person } from '../types/Person';
 
 interface Props {
   people: Person[];
+  sort: string | null;
+  order: string | null;
 }
 
-export const PeopleTable = ({ people }: Props) => {
+export const PeopleTable = ({ people, sort, order }: Props) => {
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // Extract the slug from the URL (e.g., "/people/emma-de-milliano-1876" -> "emma-de-milliano-1876")
-  // If we are just on "/people", this will be an empty string.
   const currentSlug = location.pathname.split('/people/')[1] || '';
 
-  // Helper to generate the exact slug expected by the tests
   const getSlug = (person: Person) => {
     return `${person.name.toLowerCase().replace(/\s+/g, '-')}-${person.born}`;
   };
 
-  // Helper to find the slug of a parent if they exist in the current people list
   const findParentSlug = (name: string | null | undefined) => {
     if (!name) {
       return null;
@@ -28,6 +27,38 @@ export const PeopleTable = ({ people }: Props) => {
     return foundPerson ? getSlug(foundPerson) : null;
   };
 
+  // 1. Handle header clicks to cycle sorting states
+  const handleSort = (field: string) => {
+    const newParams = new URLSearchParams(searchParams);
+
+    if (sort === field) {
+      if (order === 'asc') {
+        // Cycle to descending
+        newParams.set('sort', field);
+        newParams.set('order', 'desc');
+      } else {
+        // Cycle to disabled (remove params)
+        newParams.delete('sort');
+        newParams.delete('order');
+      }
+    } else {
+      // Start new sort (ascending)
+      newParams.set('sort', field);
+      newParams.set('order', 'asc');
+    }
+
+    setSearchParams(newParams);
+  };
+
+  // 2. Helper to render the visual indicator arrows
+  const renderSortArrow = (field: string) => {
+    if (sort !== field) {
+      return null;
+    }
+
+    return order === 'desc' ? ' ↓' : ' ↑';
+  };
+
   return (
     <table
       data-cy="peopleTable"
@@ -35,10 +66,19 @@ export const PeopleTable = ({ people }: Props) => {
     >
       <thead>
         <tr>
-          <th>Name</th>
-          <th>Sex</th>
-          <th>Born</th>
-          <th>Died</th>
+          {/* 3. Make headers clickable and add visual indicators */}
+          <th onClick={() => handleSort('name')} style={{ cursor: 'pointer' }}>
+            Name{renderSortArrow('name')}
+          </th>
+          <th onClick={() => handleSort('sex')} style={{ cursor: 'pointer' }}>
+            Sex{renderSortArrow('sex')}
+          </th>
+          <th onClick={() => handleSort('born')} style={{ cursor: 'pointer' }}>
+            Born{renderSortArrow('born')}
+          </th>
+          <th onClick={() => handleSort('died')} style={{ cursor: 'pointer' }}>
+            Died{renderSortArrow('died')}
+          </th>
           <th>Mother</th>
           <th>Father</th>
         </tr>
@@ -46,7 +86,6 @@ export const PeopleTable = ({ people }: Props) => {
       <tbody>
         {people.map(person => {
           const personSlug = getSlug(person);
-          // Check if this row's person matches the current URL slug
           const isSelected = personSlug === currentSlug;
 
           const motherSlug = findParentSlug(person.motherName);
@@ -56,11 +95,9 @@ export const PeopleTable = ({ people }: Props) => {
             <tr
               key={person.name}
               data-cy="person"
-              // 1. Highlight the row if it matches the URL
               className={isSelected ? 'has-background-warning' : ''}
             >
               <td>
-                {/* 2. Add has-text-danger for women ('f') */}
                 <Link
                   to={`/people/${personSlug}`}
                   className={person.sex === 'f' ? 'has-text-danger' : ''}
@@ -72,7 +109,6 @@ export const PeopleTable = ({ people }: Props) => {
               <td>{person.born}</td>
               <td>{person.died}</td>
               <td>
-                {/* 3. Render Mother link if she exists in the table */}
                 {person.motherName ? (
                   motherSlug ? (
                     <Link
@@ -89,7 +125,6 @@ export const PeopleTable = ({ people }: Props) => {
                 )}
               </td>
               <td>
-                {/* 4. Render Father link if he exists in the table */}
                 {person.fatherName ? (
                   fatherSlug ? (
                     <Link to={`/people/${fatherSlug}`}>
